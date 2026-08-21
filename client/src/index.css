@@ -1,0 +1,194 @@
+@import "tailwindcss";
+
+/* ─── Custom Design Tokens ─── */
+:root {
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-accent: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --gradient-success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  --gradient-dark: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  --shadow-glow: 0 0 20px rgba(102, 126, 234, 0.3);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --radius: 16px;
+}
+
+/* ─── Global Styles ─── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0a0a1a;
+  color: #e8e8f0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #1a1a2e;
+}
+::-webkit-scrollbar-thumb {
+  background: #667eea;
+  border-radius: 3px;
+}
+
+/* ─── Glass Card ─── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  transition: all 0.3s ease;
+}
+.glass-card:hover {
+  border-color: rgba(102, 126, 234, 0.3);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+/* ─── Gradient Button ─── */
+.btn-primary {
+  background: var(--gradient-primary);
+  color: white;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(102, 126, 234, 0.5);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-danger {
+  background: var(--gradient-accent);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+}
+.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(245, 87, 108, 0.5);
+}
+
+.btn-outline {
+  background: transparent;
+  color: #667eea;
+  border: 1px solid rgba(102, 126, 234, 0.4);
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.btn-outline:hover {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: #667eea;
+}
+
+/* ─── Form Inputs ─── */
+.input-field {
+  width: 100%;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #e8e8f0;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  outline: none;
+}
+.input-field:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+.input-field::placeholder {
+  color: rgba(232, 232, 240, 0.3);
+}
+
+/* ─── Animations ─── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(102, 126, 234, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(102, 126, 234, 0.4); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+.animate-slide-in {
+  animation: slideIn 0.4s ease forwards;
+}
+
+/* ─── Status Badges ─── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.badge-available {
+  background: rgba(56, 239, 125, 0.15);
+  color: #38ef7d;
+  border: 1px solid rgba(56, 239, 125, 0.3);
+}
+.badge-in-use {
+  background: rgba(245, 87, 108, 0.15);
+  color: #f5576c;
+  border: 1px solid rgba(245, 87, 108, 0.3);
+}
+.badge-maintenance {
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+.badge-confirmed {
+  background: rgba(102, 126, 234, 0.15);
+  color: #667eea;
+  border: 1px solid rgba(102, 126, 234, 0.3);
+}
+.badge-cancelled {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(232, 232, 240, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.badge-completed {
+  background: rgba(56, 239, 125, 0.15);
+  color: #38ef7d;
+  border: 1px solid rgba(56, 239, 125, 0.3);
+}
