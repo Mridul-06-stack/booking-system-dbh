@@ -6,6 +6,59 @@ A robust, real-time washing machine slot booking system designed exclusively for
 
 ## 🏗️ System Architecture
 
+### High-Level Architectural Flow
+```mermaid
+graph TD
+    Client[React Frontend Vite] -->|HTTPS REST API| API[Express.js / Node Server]
+    Client -->|WebSockets Socket.IO| Realtime[Real-time WebSocket Engine]
+    API -->|Mongoose ODM| DB[(MongoDB)]
+    Realtime <-->|Live Events| API
+    
+    subgraph Frontend
+    Client
+    Tailwind[Tailwind CSS] --> Client
+    Context[React Auth Context] --> Client
+    end
+
+    subgraph Backend
+    API
+    Auth[JWT & bcrypt.js] --> API
+    Zod[Zod Validation] --> API
+    Realtime
+    Email[Nodemailer Mock] --> API
+    end
+```
+
+### Entity Relationship & Core Flow
+```mermaid
+erDiagram
+    STUDENT ||--o{ BOOKING : creates
+    WASHMACHINE ||--o{ BOOKING : hosts
+    
+    STUDENT {
+        string ID
+        string name
+        string email "@nith.ac.in"
+        string role "Admin or Student"
+        string hostel "Dhauladhar Boys Hostel"
+    }
+    
+    WASHMACHINE {
+        string ID
+        string machineNumber
+        string location
+        string status "Available or Maintenance"
+    }
+
+    BOOKING {
+        string ID
+        date date
+        string startTime
+        string endTime
+        string status "Confirmed, Cancelled, Completed"
+    }
+```
+
 The project is built on a modern **MERN (MongoDB, Express, React, Node.js)** stack layered with **TypeScript** and **Tailwind CSS**. 
 
 ### 1. Frontend Architecture (`client/`)
