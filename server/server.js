@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const connectDB = require('./config/db');
+const ensureDefaultMachines = require('./utils/seedMachines');
 
 // Load env vars
 dotenv.config({ path: '../.env' });
@@ -62,7 +63,8 @@ app.use((err, req, res, next) => {
 // Start server
 const PORT = process.env.PORT || 5000;
 
-connectDB().then(() => {
+connectDB().then(async () => {
+    await ensureDefaultMachines();
     httpServer.listen(PORT, () => {
         console.log(`🚀 Server running on port ${PORT}`);
     });

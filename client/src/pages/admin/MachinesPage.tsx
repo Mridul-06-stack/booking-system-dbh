@@ -61,7 +61,7 @@ export default function MachinesPage() {
                     <form onSubmit={handleAdd} style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
                         <div style={{ flex: 1 }}>
                             <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px' }}>Number</label>
-                            <input type="number" required className="input-field" value={newMachine.machineNumber} onChange={e => setNewMachine(p => ({ ...p, machineNumber: e.target.value }))} />
+                            <input type="text" required className="input-field" value={newMachine.machineNumber} onChange={e => setNewMachine(p => ({ ...p, machineNumber: e.target.value }))} placeholder="e.g. M3" />
                         </div>
                         <div style={{ flex: 1 }}>
                             <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px' }}>Hostel</label>

@@ -15,7 +15,7 @@ export default function AnalyticsPage() {
     useEffect(() => {
         api.get('/admin/analytics')
             .then(res => setData(res.data.data))
-            .catch(err => alert('Failed to fetch analytics'))
+            .catch(() => alert('Failed to fetch analytics'))
             .finally(() => setLoading(false));
     }, []);
 
@@ -51,7 +51,7 @@ export default function AnalyticsPage() {
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie data={machineChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
-                                        {machineChartData.map((e: any, i: number) => <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />)}
+                                        {machineChartData.map((_: any, i: number) => <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />)}
                                     </Pie>
                                     <Tooltip contentStyle={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)' }} />
                                 </PieChart>

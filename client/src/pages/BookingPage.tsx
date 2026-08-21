@@ -4,11 +4,21 @@ import api from '../services/api';
 import Navbar from '../components/Navbar';
 import { io } from 'socket.io-client';
 
+function formatLocalDate(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 export default function BookingPage() {
     const [machines, setMachines] = useState<any[]>([]);
     const [selectedMachine, setSelectedMachine] = useState('');
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatLocalDate(new Date());
+    const tomorrowDate = new Date();
+    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+    const tomorrow = formatLocalDate(tomorrowDate);
     const [date, setDate] = useState(today);
 
     const [slots, setSlots] = useState<any[]>([]);
@@ -21,9 +31,11 @@ export default function BookingPage() {
 
     useEffect(() => {
         // Fetch machines
-        api.get('/machines').then(res => {
-            setMachines(res.data.machines.filter((m: any) => m.status === 'available'));
-        });
+        api.get('/machines')
+            .then(res => {
+                setMachines(res.data.machines.filter((m: any) => m.status === 'available'));
+            })
+            .catch(err => setError(err.response?.data?.message || 'Failed to load machines'));
 
         // Real-time updates
         const socket = io();
@@ -70,7 +82,7 @@ export default function BookingPage() {
             <Navbar />
             <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px 20px' }}>
                 <h1 style={{ fontSize: '2.2rem', marginBottom: '8px' }}>Book a Slot</h1>
-                <p style={{ color: 'rgba(232,232,240,0.6)', marginBottom: '30px' }}>Select a machine and time. Limit: 2 per week.</p>
+                <p style={{ color: 'rgba(232,232,240,0.6)', marginBottom: '30px' }}>Select a machine and time for today or tomorrow. Limit: 2 per week.</p>
 
                 {error && (
                     <div style={{ background: 'rgba(245,87,108,0.1)', color: '#f5576c', padding: '12px', borderRadius: '8px', marginBottom: '20px', border: '1px solid rgba(245,87,108,0.3)' }}>
@@ -85,13 +97,21 @@ export default function BookingPage() {
                             <select className="input-field" value={selectedMachine} onChange={e => { setSelectedMachine(e.target.value); setSelectedSlot(null); }} style={{ appearance: 'none', background: '#1a1a2e' }}>
                                 <option value="">-- Choose Machine --</option>
                                 {machines.map(m => (
-                                    <option key={m._id} value={m._id}>Machine {m.machineNumber} ({m.hostel})</option>
+                                    <option key={m._id} value={m._id}>{m.machineNumber} ({m.hostel})</option>
                                 ))}
                             </select>
+                            {machines.length === 0 && (
+                                <p style={{ marginTop: '8px', fontSize: '0.85rem', color: 'rgba(232,232,240,0.6)' }}>
+                                    No machines are currently available.
+                                </p>
+                            )}
                         </div>
                         <div>
-                            <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'rgba(232,232,240,0.8)' }}>Select Date</label>
-                            <input type="date" className="input-field" value={date} min={today} onChange={e => { setDate(e.target.value); setSelectedSlot(null); }} />
+                            <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'rgba(232,232,240,0.8)' }}>Booking Date</label>
+                            <select className="input-field" value={date} onChange={e => { setDate(e.target.value); setSelectedSlot(null); }} style={{ appearance: 'none', background: '#1a1a2e' }}>
+                                <option value={today}>Today ({today})</option>
+                                <option value={tomorrow}>Tomorrow ({tomorrow})</option>
+                            </select>
                         </div>
                     </div>
 

@@ -2,6 +2,7 @@ const Booking = require('../models/Booking');
 const WashingMachine = require('../models/WashingMachine');
 const { generateSlots, getWeekStart, getWeekEnd } = require('../utils/slotGenerator');
 const { sendBookingEmail } = require('../utils/notifications');
+const { getBookableDates, isBookableDate } = require('../utils/bookingDates');
 
 // GET /api/bookings/slots?machineId=...&date=YYYY-MM-DD
 exports.getAvailableSlots = async (req, res) => {
@@ -9,6 +10,9 @@ exports.getAvailableSlots = async (req, res) => {
         const { machineId, date } = req.query;
         if (!machineId || !date) {
             return res.status(400).json({ success: false, message: 'machineId and date are required' });
+        }
+        if (!isBookableDate(date)) {
+            return res.status(400).json({ success: false, message: 'Slots can only be viewed for today or tomorrow' });
         }
 
         // Get all confirmed bookings for this machine on this date
@@ -20,7 +24,7 @@ exports.getAvailableSlots = async (req, res) => {
 
         const allSlots = generateSlots();
         const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
+        const { today: todayStr } = getBookableDates(now);
         const currentHour = now.getHours();
         const currentMinute = now.getMinutes();
 
@@ -58,6 +62,10 @@ exports.createBooking = async (req, res) => {
     try {
         const { machineId, date, startTime, endTime } = req.body;
         const studentId = req.student._id;
+
+        if (!isBookableDate(date)) {
+            return res.status(400).json({ success: false, message: 'Bookings can only be made for today or tomorrow' });
+        }
 
         // Rule 1: Email @nith.ac.in — already enforced at registration
 
