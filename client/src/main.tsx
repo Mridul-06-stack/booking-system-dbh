@@ -13,6 +13,7 @@ import AdminMachinesPage from './pages/admin/MachinesPage';
 import AnalyticsPage from './pages/admin/AnalyticsPage';
 import StudentsPage from './pages/admin/StudentsPage';
 import ScannerPage from './pages/admin/ScannerPage';
+import SettingsPage from './pages/admin/SettingsPage';
 
 import './index.css';
 
@@ -30,6 +31,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
 
           {/* Admin Routes */}
+          <Route path="/admin/settings" element={<ProtectedRoute adminOnly><SettingsPage /></ProtectedRoute>} />
           <Route path="/admin/machines" element={<ProtectedRoute adminOnly><AdminMachinesPage /></ProtectedRoute>} />
           <Route path="/admin/analytics" element={<ProtectedRoute adminOnly><AnalyticsPage /></ProtectedRoute>} />
           <Route path="/admin/students" element={<ProtectedRoute adminOnly><StudentsPage /></ProtectedRoute>} />

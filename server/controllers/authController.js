@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
 const Student = require('../models/Student');
+const SystemSettings = require('../models/SystemSettings');
+const AllowedUser = require('../models/AllowedUser');
 
 // Generate JWT
 const generateToken = (id) => {
@@ -18,16 +20,39 @@ exports.register = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Email must end with @nith.ac.in' });
         }
 
-        // Check existing
-        const existing = await Student.findOne({ $or: [{ email }, { rollNumber: rollNumber?.toUpperCase() }] });
+        const normalizedEmail = email.toLowerCase().trim();
+        const normalizedRoll = rollNumber ? rollNumber.toUpperCase().trim() : '';
+
+        // Check if allowed list restriction is enabled or populated
+        const settings = await SystemSettings.getSettings();
+        const allowedCount = await AllowedUser.countDocuments();
+
+        if (settings.requireAllowedList || allowedCount > 0) {
+            const isAllowed = await AllowedUser.findOne({
+                $or: [
+                    { email: normalizedEmail },
+                    { rollNumber: normalizedRoll },
+                ],
+            });
+
+            if (!isAllowed) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Registration restricted: Your email/roll number is not in the pre-authorized allowed list. Please contact admin.',
+                });
+            }
+        }
+
+        // Check existing registration
+        const existing = await Student.findOne({ $or: [{ email: normalizedEmail }, { rollNumber: normalizedRoll }] });
         if (existing) {
             return res.status(400).json({ success: false, message: 'Email or roll number already registered' });
         }
 
         const student = await Student.create({
             name,
-            email,
-            rollNumber,
+            email: normalizedEmail,
+            rollNumber: normalizedRoll,
             hostel,
             roomNumber,
             passwordHash: password, // pre-save hook will hash it
@@ -54,7 +79,7 @@ exports.login = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Email and password are required' });
         }
 
-        const student = await Student.findOne({ email }).select('+passwordHash');
+        const student = await Student.findOne({ email: email.toLowerCase().trim() }).select('+passwordHash');
         if (!student) {
             return res.status(401).json({ success: false, message: 'Invalid email or password' });
         }

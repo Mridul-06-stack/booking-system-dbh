@@ -68,10 +68,10 @@ export default function Navbar() {
 
                     {isAdmin &&
                         [
+                            { to: '/admin/settings', label: 'Settings & Whitelist' },
                             { to: '/admin/analytics', label: 'Analytics' },
                             { to: '/admin/machines', label: 'Machines' },
                             { to: '/admin/students', label: 'Students' },
-                            { to: '/admin/scanner', label: 'Scanner' },
                         ].map((link) => (
                             <Link
                                 key={link.to}

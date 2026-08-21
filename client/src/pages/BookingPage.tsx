@@ -16,12 +16,10 @@ export default function BookingPage() {
     const [selectedMachine, setSelectedMachine] = useState('');
 
     const today = formatLocalDate(new Date());
-    const tomorrowDate = new Date();
-    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-    const tomorrow = formatLocalDate(tomorrowDate);
-    const [date, setDate] = useState(today);
+    const date = today;
 
     const [slots, setSlots] = useState<any[]>([]);
+    const [settings, setSettings] = useState<any>(null);
     const [selectedSlot, setSelectedSlot] = useState<any>(null);
 
     const [loading, setLoading] = useState(false);
@@ -33,7 +31,11 @@ export default function BookingPage() {
         // Fetch machines
         api.get('/machines')
             .then(res => {
-                setMachines(res.data.machines.filter((m: any) => m.status === 'available'));
+                const avail = res.data.machines.filter((m: any) => m.status === 'available');
+                setMachines(avail);
+                if (avail.length > 0 && !selectedMachine) {
+                    setSelectedMachine(avail[0]._id);
+                }
             })
             .catch(err => setError(err.response?.data?.message || 'Failed to load machines'));
 
@@ -55,7 +57,10 @@ export default function BookingPage() {
         if (!selectedMachine || !date) return;
         setLoading(true);
         api.get(`/bookings/slots?machineId=${selectedMachine}&date=${date}`)
-            .then(res => setSlots(res.data.slots))
+            .then(res => {
+                setSlots(res.data.slots || []);
+                if (res.data.settings) setSettings(res.data.settings);
+            })
             .catch(err => setError(err.response?.data?.message || 'Failed to fetch slots'))
             .finally(() => setLoading(false));
     };
@@ -84,7 +89,9 @@ export default function BookingPage() {
                 <div className="board-header">
                     <div>
                         <h1 className="page-title">Slot Reservation Sheet</h1>
-                        <p className="page-subtitle">Choose machine, day, and cycle time. Limit is 2 confirmed bookings per week.</p>
+                        <p className="page-subtitle">
+                            Choose machine and time for today ({today}). Weekly quota limit is {settings?.weeklyQuota || 2} slots per student.
+                        </p>
                     </div>
                 </div>
 
@@ -112,16 +119,17 @@ export default function BookingPage() {
                         </div>
                         <div>
                             <label style={{ display: 'block', fontSize: '0.83rem', marginBottom: '8px', color: 'var(--steel)' }}>Date</label>
-                            <select className="input-field mono" value={date} onChange={e => { setDate(e.target.value); setSelectedSlot(null); }}>
-                                <option value={today}>Today ({today})</option>
-                                <option value={tomorrow}>Tomorrow ({tomorrow})</option>
-                            </select>
+                            <div className="mono" style={{ padding: '8px 12px', background: 'rgba(47, 103, 130, 0.1)', borderRadius: '6px', border: '1px solid var(--line)', color: 'var(--detergent-blue)', fontWeight: 600 }}>
+                                📅 Today ({today})
+                            </div>
                         </div>
                     </div>
 
                     {selectedMachine && (
                         <div>
-                            <h3 className="section-title" style={{ marginBottom: '10px' }}>Timetable (06:00 to 22:00)</h3>
+                            <h3 className="section-title" style={{ marginBottom: '10px' }}>
+                                Timetable ({settings ? `${String(settings.operatingStartHour).padStart(2, '0')}:00 to ${String(settings.operatingEndHour).padStart(2, '0')}:00` : '06:00 to 22:00'})
+                            </h3>
                             {loading ? (
                                 <div className="mono" style={{ color: 'var(--steel)', fontSize: '0.84rem' }}>Loading slots...</div>
                             ) : (

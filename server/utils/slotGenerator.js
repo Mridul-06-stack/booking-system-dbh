@@ -1,14 +1,26 @@
 /**
- * Generate 1-hour time slots between 06:00 and 22:00.
- * Returns an array of { startTime, endTime } objects.
+ * Generate time slots dynamically based on start/end hours and slot duration in minutes.
+ * Default: 06:00 to 22:00 with 60-minute duration.
+ * Returns an array of { startTime, endTime } objects (formatted as HH:MM).
  */
-function generateSlots() {
+function generateSlots(startHour = 6, endHour = 22, durationMinutes = 60) {
     const slots = [];
-    for (let hour = 6; hour < 22; hour++) {
-        const startTime = `${String(hour).padStart(2, '0')}:00`;
-        const endTime = `${String(hour + 1).padStart(2, '0')}:00`;
-        slots.push({ startTime, endTime });
+    const totalStartMinutes = startHour * 60;
+    const totalEndMinutes = endHour * 60;
+
+    for (let m = totalStartMinutes; m + durationMinutes <= totalEndMinutes; m += durationMinutes) {
+        const startH = String(Math.floor(m / 60)).padStart(2, '0');
+        const startM = String(m % 60).padStart(2, '0');
+        const endMins = m + durationMinutes;
+        const endH = String(Math.floor(endMins / 60)).padStart(2, '0');
+        const endM = String(endMins % 60).padStart(2, '0');
+
+        slots.push({
+            startTime: `${startH}:${startM}`,
+            endTime: `${endH}:${endM}`,
+        });
     }
+
     return slots;
 }
 

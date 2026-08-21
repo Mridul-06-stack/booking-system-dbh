@@ -1,5 +1,4 @@
 const nodemailer = require('nodemailer');
-const qrcode = require('qrcode');
 
 /**
  * For initial development, we'll log emails instead of sending real ones,
@@ -24,7 +23,7 @@ exports.sendBookingEmail = async (studentEmail, type, bookingDetails) => {
         : '❌ Laundry Slot Cancelled';
 
     const text = type === 'created'
-        ? `Your booking is confirmed for Machine ${machineNumber} (${hostel}) on ${date} at ${startTime}. Please arrive on time and scan the QR code to check in.`
+        ? `Your booking is confirmed for Machine ${machineNumber} (${hostel}) on ${date} at ${startTime}. Please arrive on time.`
         : `Your booking for Machine ${machineNumber} (${hostel}) on ${date} at ${startTime} has been cancelled.`;
 
     if (transporter) {
@@ -41,16 +40,5 @@ exports.sendBookingEmail = async (studentEmail, type, bookingDetails) => {
         }
     } else {
         console.log(`\n[MOCK EMAIL to ${studentEmail}]\nSubject: ${subject}\nBody: ${text}\n`);
-    }
-};
-
-exports.generateCheckInQR = async (bookingId) => {
-    try {
-        const data = JSON.stringify({ action: 'checkin', bookingId });
-        // Returns a base64 encoded png
-        return await qrcode.toDataURL(data);
-    } catch (err) {
-        console.error('Failed to generate QR code', err);
-        return null;
     }
 };
