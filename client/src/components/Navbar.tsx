@@ -16,102 +16,88 @@ export default function Navbar() {
     if (!student) return null;
 
     return (
-        <nav style={{
-            background: 'rgba(10, 10, 26, 0.85)',
-            backdropFilter: 'blur(20px)',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-            padding: '0 2rem',
-            position: 'sticky',
-            top: 0,
-            zIndex: 100,
-        }}>
-            <div style={{
-                maxWidth: '1200px',
-                margin: '0 auto',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                height: '64px',
-            }}>
-                {/* Logo */}
-                <Link to="/dashboard" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '1.5rem' }}>🧺</span>
-                    <span style={{
-                        fontSize: '1.1rem',
-                        fontWeight: 700,
-                        background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                    }}>LaundrySlot</span>
+        <nav
+            style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 100,
+                borderBottom: '1px solid var(--line)',
+                background: 'rgba(236, 233, 222, 0.94)',
+            }}
+        >
+            <div
+                style={{
+                    maxWidth: '1200px',
+                    margin: '0 auto',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    minHeight: '62px',
+                    padding: '10px 18px',
+                    gap: '14px',
+                    flexWrap: 'wrap',
+                }}
+            >
+                <Link to="/dashboard" style={{ textDecoration: 'none' }}>
+                    <div style={{ fontFamily: 'Bitter, serif', letterSpacing: '0.06em', fontSize: '1.04rem' }}>DBH LAUNDRY BOARD</div>
+                    <div className="mono" style={{ fontSize: '0.72rem', color: 'var(--steel)' }}>Dhouladhar Hostel Utility Console</div>
                 </Link>
 
-                {/* Nav Links */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                     {[
-                        { to: '/dashboard', label: '📊 Dashboard' },
-                        { to: '/book', label: '📅 Book Slot' },
-                        { to: '/history', label: '📋 History' },
-                    ].map(link => (
-                        <Link key={link.to} to={link.to} style={{
-                            textDecoration: 'none',
-                            padding: '8px 16px',
-                            borderRadius: '10px',
-                            fontSize: '0.85rem',
-                            fontWeight: 500,
-                            color: isActive(link.to) ? '#fff' : 'rgba(232,232,240,0.6)',
-                            background: isActive(link.to) ? 'rgba(102,126,234,0.2)' : 'transparent',
-                            border: isActive(link.to) ? '1px solid rgba(102,126,234,0.3)' : '1px solid transparent',
-                            transition: 'all 0.2s ease',
-                        }}>{link.label}</Link>
+                        { to: '/dashboard', label: 'Status Board' },
+                        { to: '/book', label: 'Book Slot' },
+                        { to: '/history', label: 'History' },
+                    ].map((link) => (
+                        <Link
+                            key={link.to}
+                            to={link.to}
+                            style={{
+                                textDecoration: 'none',
+                                padding: '6px 11px',
+                                fontSize: '0.82rem',
+                                borderRadius: '6px',
+                                border: isActive(link.to) ? '1px solid var(--detergent-blue)' : '1px solid var(--line)',
+                                background: isActive(link.to) ? 'rgba(47, 103, 130, 0.12)' : 'rgba(255,255,255,0.3)',
+                                color: isActive(link.to) ? 'var(--detergent-blue)' : 'var(--ink)',
+                            }}
+                        >
+                            {link.label}
+                        </Link>
                     ))}
 
-                    {isAdmin && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', borderLeft: '1px solid rgba(255,255,255,0.1)', marginLeft: '6px', paddingLeft: '12px' }}>
-                            {[
-                                { to: '/admin/analytics', label: '📈 Analytics' },
-                                { to: '/admin/machines', label: '⚙️ Machines' },
-                                { to: '/admin/students', label: '👥 Students' },
-                                { to: '/admin/scanner', label: '📷 Scanner' },
-                            ].map(link => (
-                                <Link key={link.to} to={link.to} style={{
+                    {isAdmin &&
+                        [
+                            { to: '/admin/analytics', label: 'Analytics' },
+                            { to: '/admin/machines', label: 'Machines' },
+                            { to: '/admin/students', label: 'Students' },
+                            { to: '/admin/scanner', label: 'Scanner' },
+                        ].map((link) => (
+                            <Link
+                                key={link.to}
+                                to={link.to}
+                                style={{
                                     textDecoration: 'none',
-                                    padding: '8px 16px',
-                                    borderRadius: '10px',
-                                    fontSize: '0.85rem',
-                                    fontWeight: 500,
-                                    color: isActive(link.to) ? '#ffc107' : 'rgba(255,193,7,0.6)',
-                                    background: isActive(link.to) ? 'rgba(255,193,7,0.1)' : 'transparent',
-                                    border: isActive(link.to) ? '1px solid rgba(255,193,7,0.3)' : '1px solid transparent',
-                                    transition: 'all 0.2s ease',
-                                }}>{link.label}</Link>
-                            ))}
-                        </div>
-                    )}
+                                    padding: '6px 11px',
+                                    fontSize: '0.82rem',
+                                    borderRadius: '6px',
+                                    border: isActive(link.to) ? '1px solid var(--service-amber)' : '1px solid var(--line)',
+                                    background: isActive(link.to) ? 'rgba(138, 106, 47, 0.15)' : 'rgba(255,255,255,0.3)',
+                                    color: isActive(link.to) ? 'var(--service-amber)' : 'var(--ink)',
+                                }}
+                            >
+                                {link.label}
+                            </Link>
+                        ))}
                 </div>
 
-                {/* User + Logout */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{
-                        padding: '6px 14px',
-                        borderRadius: '20px',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        fontSize: '0.8rem',
-                        color: 'rgba(232,232,240,0.7)',
-                    }}>
-                        {student.name} · {student.rollNumber}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="mono" style={{ fontSize: '0.77rem', padding: '6px 8px', border: '1px solid var(--line)', borderRadius: '6px' }}>
+                        {student.rollNumber} | {student.name}
                     </div>
-                    <button onClick={handleLogout} style={{
-                        background: 'rgba(245,87,108,0.1)',
-                        border: '1px solid rgba(245,87,108,0.3)',
-                        color: '#f5576c',
-                        padding: '8px 14px',
-                        borderRadius: '10px',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                    }}>Logout</button>
+                    <button onClick={handleLogout} className="btn-danger" style={{ padding: '6px 10px', fontSize: '0.76rem' }}>
+                        Sign Out
+                    </button>
                 </div>
             </div>
         </nav>

@@ -3,92 +3,142 @@ import { Link } from 'react-router-dom';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
 import QRCode from 'react-qr-code';
+import { io } from 'socket.io-client';
+
+type Machine = {
+    _id: string;
+    machineNumber: string;
+    hostel: string;
+    location?: string;
+    status: 'available' | 'in-use' | 'maintenance';
+};
 
 export default function DashboardPage() {
     const [stats, setStats] = useState<any>(null);
     const [upcoming, setUpcoming] = useState<any[]>([]);
+    const [machines, setMachines] = useState<Machine[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        Promise.all([
-            api.get('/dashboard/stats'),
-            api.get('/dashboard/upcoming')
-        ]).then(([statsRes, upcomingRes]) => {
-            setStats(statsRes.data.stats);
-            setUpcoming(upcomingRes.data.bookings);
-        }).finally(() => setLoading(false));
+        Promise.all([api.get('/dashboard/stats'), api.get('/dashboard/upcoming'), api.get('/machines')])
+            .then(([statsRes, upcomingRes, machinesRes]) => {
+                setStats(statsRes.data.stats);
+                setUpcoming(upcomingRes.data.bookings);
+                setMachines(machinesRes.data.machines);
+            })
+            .finally(() => setLoading(false));
+
+        const socket = io();
+        socket.on('machine-status-update', (machine: Machine) => {
+            setMachines((prev) => prev.map((m) => (m._id === machine._id ? machine : m)));
+        });
+
+        return () => {
+            socket.disconnect();
+        };
     }, []);
 
     if (loading) return <div>Loading...</div>;
 
+    const available = machines.filter((m) => m.status === 'available').length;
+    const inUse = machines.filter((m) => m.status === 'in-use').length;
+    const maintenance = machines.filter((m) => m.status === 'maintenance').length;
+
     return (
         <div>
             <Navbar />
-            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '30px' }}>
+            <div className="page-shell">
+                <div className="board-header">
                     <div>
-                        <h1 style={{ fontSize: '2.2rem', marginBottom: '8px' }}>Dashboard</h1>
-                        <p style={{ color: 'rgba(232,232,240,0.6)' }}>Welcome back. Manage your laundry slots here.</p>
+                        <h1 className="page-title">Machine Slot Booking Statusboard</h1>
+                        <p className="page-subtitle">Live machine availability and your queue position for this week.</p>
                     </div>
                     <Link to="/book">
-                        <button className="btn-primary">Book New Slot</button>
+                        <button className="btn-primary">Reserve Next Slot</button>
                     </Link>
                 </div>
 
-                {/* Stats Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '40px' }}>
-                    <div className="glass-card animate-slide-in" style={{ padding: '24px' }}>
-                        <h3 style={{ color: 'rgba(232,232,240,0.6)', fontSize: '0.9rem', marginBottom: '12px' }}>Weekly Usage Limit</h3>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                            <span style={{ fontSize: '2.5rem', fontWeight: 700, color: '#f5576c' }}>{stats?.weeklyUsed}</span>
-                            <span style={{ fontSize: '1.2rem', color: 'rgba(232,232,240,0.5)' }}>/ 2 Used</span>
+                <div className="panel" style={{ padding: '14px', marginBottom: '18px' }}>
+                    <div className="status-board">
+                        <div>
+                            <h2 className="section-title">Machine Board</h2>
+                            <div className="machine-grid">
+                                {machines.map((m) => (
+                                    <div key={m._id} className="machine-tile">
+                                        <div className="machine-tile-top">
+                                            <span className="machine-code">M-{m.machineNumber}</span>
+                                            <span className={`signal ${m.status}`} />
+                                        </div>
+                                        <div className="status-text">{m.status.replace('-', ' ')}</div>
+                                        <div className="mono" style={{ marginTop: '6px', fontSize: '0.72rem', color: 'var(--steel)' }}>
+                                            {m.location || m.hostel}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="board-note">Color signal updates in real time when an admin changes machine status.</div>
                         </div>
-                        <p style={{ fontSize: '0.8rem', color: 'rgba(232,232,240,0.5)', marginTop: '8px' }}>Resets on Sunday night.</p>
-                    </div>
 
-                    <div className="glass-card animate-slide-in" style={{ padding: '24px', animationDelay: '0.1s' }}>
-                        <h3 style={{ color: 'rgba(232,232,240,0.6)', fontSize: '0.9rem', marginBottom: '12px' }}>Total Completed</h3>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                            <span style={{ fontSize: '2.5rem', fontWeight: 700, color: '#38ef7d' }}>{stats?.completedBookings}</span>
-                            <span style={{ fontSize: '1.2rem', color: 'rgba(232,232,240,0.5)' }}>Washes</span>
+                        <div>
+                            <h2 className="section-title">Usage and Quota</h2>
+                            <div className="metric-list">
+                                <div className="metric-item">
+                                    <div className="metric-label">Weekly Quota</div>
+                                    <div className="metric-value">{stats?.weeklyUsed} of 2 used</div>
+                                </div>
+                                <div className="metric-item">
+                                    <div className="metric-label">Slots Remaining</div>
+                                    <div className="metric-value">{stats?.weeklyRemaining}</div>
+                                </div>
+                                <div className="metric-item">
+                                    <div className="metric-label">Completed Cycles</div>
+                                    <div className="metric-value">{stats?.completedBookings}</div>
+                                </div>
+                                <div className="metric-item">
+                                    <div className="metric-label">Room Status</div>
+                                    <div className="mono" style={{ fontSize: '0.85rem' }}>
+                                        {available} free | {inUse} in use | {maintenance} down
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Upcoming Bookings */}
-                <h2 style={{ fontSize: '1.4rem', marginBottom: '20px' }}>Upcoming Bookings</h2>
-                {upcoming.length === 0 ? (
-                    <div className="glass-card" style={{ padding: '40px', textAlign: 'center', color: 'rgba(232,232,240,0.5)' }}>
-                        <p style={{ fontSize: '1.1rem', marginBottom: '16px' }}>No upcoming bookings.</p>
-                        <Link to="/book"><button className="btn-outline">Book a machine now</button></Link>
-                    </div>
-                ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
-                        {upcoming.map((b: any) => (
-                            <div key={b._id} className="glass-card" style={{ padding: '24px', borderLeft: '4px solid #667eea' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                                    <span className={`badge badge-${b.status}`}>{b.status}</span>
-                                    <span style={{ fontSize: '0.9rem', color: 'rgba(232,232,240,0.5)' }}>Machine {b.machineId.machineNumber}</span>
-                                </div>
-                                <div style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '8px' }}>
-                                    {new Date(b.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-                                </div>
-                                <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#667eea', marginBottom: '16px' }}>
-                                    {b.startTime} - {b.endTime}
-                                </div>
-                                <div style={{ fontSize: '0.9rem', color: 'rgba(232,232,240,0.8)', marginBottom: '16px' }}>
-                                    Hostel: {b.machineId.hostel}
-                                </div>
-                                {b.status === 'confirmed' && (
-                                    <div style={{ background: '#fff', padding: '16px', borderRadius: '12px', textAlign: 'center', display: 'inline-block' }}>
-                                        <QRCode value={b._id} size={100} style={{ margin: '0 auto' }} />
-                                        <p style={{ marginTop: '8px', fontSize: '0.75rem', color: '#1a1a2e', fontFamily: 'monospace' }}>{b._id}</p>
+                <div className="panel" style={{ padding: '14px' }}>
+                    <h2 className="section-title">Upcoming Queue</h2>
+                    {upcoming.length === 0 ? (
+                        <div className="mono" style={{ fontSize: '0.86rem', color: 'var(--steel)' }}>
+                            No confirmed bookings. Reserve a slot to appear in the queue.
+                        </div>
+                    ) : (
+                        <div style={{ display: 'grid', gap: '10px' }}>
+                            {upcoming.map((b: any) => (
+                                <div key={b._id} className="panel" style={{ padding: '10px', background: 'rgba(255,255,255,0.3)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+                                        <div>
+                                            <div className="mono" style={{ fontSize: '0.82rem' }}>
+                                                {b.date} | {b.startTime} - {b.endTime}
+                                            </div>
+                                            <div style={{ fontSize: '0.84rem', color: 'var(--steel)' }}>
+                                                Machine {b.machineId.machineNumber} | {b.machineId.hostel}
+                                            </div>
+                                        </div>
+                                        <span className={`badge badge-${b.status}`}>{b.status}</span>
                                     </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                )}
+                                    {b.status === 'confirmed' && (
+                                        <div style={{ marginTop: '10px', display: 'inline-flex', gap: '8px', alignItems: 'center' }}>
+                                            <div style={{ background: '#fff', borderRadius: '4px', padding: '8px', border: '1px solid var(--line)' }}>
+                                                <QRCode value={b._id} size={82} />
+                                            </div>
+                                            <div className="mono" style={{ fontSize: '0.7rem', color: 'var(--steel)' }}>{b._id}</div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

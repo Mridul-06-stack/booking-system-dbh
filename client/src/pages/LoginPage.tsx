@@ -26,21 +26,21 @@ export default function LoginPage() {
 
     return (
         <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <div className="glass-card animate-fade-in" style={{ width: '100%', maxWidth: '420px', padding: '40px' }}>
+            <div className="panel" style={{ width: '100%', maxWidth: '420px', padding: '24px' }}>
                 <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                    <h1 style={{ fontSize: '2rem', marginBottom: '10px' }}>Welcome Back</h1>
-                    <p style={{ color: 'rgba(232,232,240,0.6)' }}>Login to book your laundry slot</p>
+                    <h1 className="page-title" style={{ marginBottom: '10px' }}>Sign In</h1>
+                    <p className="page-subtitle">Use your hostel account to reserve slots.</p>
                 </div>
 
                 {error && (
-                    <div style={{ background: 'rgba(245,87,108,0.1)', color: '#f5576c', padding: '12px', borderRadius: '8px', marginBottom: '20px', border: '1px solid rgba(245,87,108,0.3)', fontSize: '0.9rem' }}>
-                        ⚠️ {error}
+                    <div className="alert" style={{ marginBottom: '20px' }}>
+                        {error}
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '8px', color: 'rgba(232,232,240,0.8)' }}>NIT Email</label>
+                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '8px', color: 'var(--steel)' }}>NIT Email</label>
                         <input
                             type="email"
                             required
@@ -51,7 +51,7 @@ export default function LoginPage() {
                         />
                     </div>
                     <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '8px', color: 'rgba(232,232,240,0.8)' }}>Password</label>
+                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '8px', color: 'var(--steel)' }}>Password</label>
                         <input
                             type="password"
                             required
@@ -67,8 +67,8 @@ export default function LoginPage() {
                     </button>
                 </form>
 
-                <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: 'rgba(232,232,240,0.6)' }}>
-                    Don't have an account? <Link to="/register" style={{ color: '#667eea', textDecoration: 'none', fontWeight: 600 }}>Create one</Link>
+                <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.9rem', color: 'var(--steel)' }}>
+                    Do not have an account? <Link to="/register" style={{ color: 'var(--detergent-blue)', textDecoration: 'none', fontWeight: 600 }}>Create one</Link>
                 </p>
             </div>
         </div>
