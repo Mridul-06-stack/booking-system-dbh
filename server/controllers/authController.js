@@ -13,7 +13,7 @@ const generateToken = (id) => {
 // POST /api/auth/register
 exports.register = async (req, res) => {
     try {
-        const { name, email, rollNumber, hostel, roomNumber, password } = req.body;
+        const { name, email, rollNumber, hostel, roomNumber, phone, password } = req.body;
 
         // Validate email domain
         if (!email || !email.endsWith('@nith.ac.in')) {
@@ -55,6 +55,7 @@ exports.register = async (req, res) => {
             rollNumber: normalizedRoll,
             hostel,
             roomNumber,
+            phone,
             passwordHash: password, // pre-save hook will hash it
         });
 

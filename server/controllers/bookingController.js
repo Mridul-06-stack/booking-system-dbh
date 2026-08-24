@@ -14,7 +14,7 @@ exports.getAvailableSlots = async (req, res) => {
             return res.status(400).json({ success: false, message: 'machineId and date are required' });
         }
         if (!isBookableDate(date)) {
-            return res.status(400).json({ success: false, message: 'Slots can only be viewed for today' });
+            return res.status(400).json({ success: false, message: 'Slots can only be viewed for today or tomorrow' });
         }
 
         const settings = await SystemSettings.getSettings();
@@ -24,7 +24,7 @@ exports.getAvailableSlots = async (req, res) => {
             machineId,
             date,
             status: { $ne: 'cancelled' },
-        }).populate('studentId', 'name rollNumber hostel roomNumber');
+        }).populate('studentId', 'name rollNumber hostel roomNumber phone');
 
         // Fetch active waitlist entries for current student
         const userWaitlists = await SlotWaitlist.find({
@@ -94,7 +94,7 @@ exports.createBooking = async (req, res) => {
         const studentId = req.student._id;
 
         if (!isBookableDate(date)) {
-            return res.status(400).json({ success: false, message: 'Bookings can only be made for today' });
+            return res.status(400).json({ success: false, message: 'Bookings can only be made for today or tomorrow' });
         }
 
         const settings = await SystemSettings.getSettings();
@@ -179,7 +179,7 @@ exports.createBooking = async (req, res) => {
 
         const populated = await booking.populate([
             { path: 'machineId', select: 'machineNumber hostel location' },
-            { path: 'studentId', select: 'name email rollNumber' },
+            { path: 'studentId', select: 'name email rollNumber phone' },
         ]);
 
         // Remove from waitlist if this student was waitlisted for this slot

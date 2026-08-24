@@ -29,10 +29,6 @@ const bookingSchema = new mongoose.Schema(
             enum: ['confirmed', 'cancelled', 'completed', 'no-show'],
             default: 'confirmed',
         },
-        checkInTime: {
-            type: Date,
-            default: null,
-        },
         cancelledAt: {
             type: Date,
             default: null,
@@ -47,8 +43,8 @@ bookingSchema.index({ machineId: 1, date: 1, status: 1 });
 bookingSchema.index({ studentId: 1, date: 1, status: 1 });
 // Unique index to guarantee a slot is only booked once (confirmed bookings)
 bookingSchema.index(
-  { machineId: 1, date: 1, startTime: 1, endTime: 1, status: 1 },
-  { unique: true, partialFilterExpression: { status: 'confirmed' } }
+    { machineId: 1, date: 1, startTime: 1, endTime: 1, status: 1 },
+    { unique: true, partialFilterExpression: { status: 'confirmed' } }
 );
 
 module.exports = mongoose.model('Booking', bookingSchema);

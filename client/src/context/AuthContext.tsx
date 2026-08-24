@@ -28,6 +28,7 @@ interface RegisterData {
     rollNumber: string;
     hostel: string;
     roomNumber: string;
+    phone: string;
     password: string;
 }
 

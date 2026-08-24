@@ -1,4 +1,14 @@
 /**
+ * Format a Date object to YYYY-MM-DD using local timezone (not UTC).
+ */
+function formatLocalDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+/**
  * Generate time slots dynamically based on start/end hours and slot duration in minutes.
  * Default: 06:00 to 22:00 with 60-minute duration.
  * Returns an array of { startTime, endTime } objects (formatted as HH:MM).
@@ -26,23 +36,24 @@ function generateSlots(startHour = 6, endHour = 22, durationMinutes = 60) {
 
 /**
  * Get the Monday of the current week for a given date string (YYYY-MM-DD).
+ * Uses local timezone to avoid UTC date shift issues.
  */
 function getWeekStart(dateStr) {
     const d = new Date(dateStr + 'T00:00:00');
     const day = d.getDay();
     const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust for Sunday
-    const monday = new Date(d.setDate(diff));
-    return monday.toISOString().split('T')[0];
+    d.setDate(diff);
+    return formatLocalDate(d);
 }
 
 /**
  * Get Sunday of the current week for a given date string (YYYY-MM-DD).
+ * Uses local timezone to avoid UTC date shift issues.
  */
 function getWeekEnd(dateStr) {
     const weekStart = new Date(getWeekStart(dateStr) + 'T00:00:00');
-    const sunday = new Date(weekStart);
-    sunday.setDate(weekStart.getDate() + 6);
-    return sunday.toISOString().split('T')[0];
+    weekStart.setDate(weekStart.getDate() + 6);
+    return formatLocalDate(weekStart);
 }
 
 module.exports = { generateSlots, getWeekStart, getWeekEnd };

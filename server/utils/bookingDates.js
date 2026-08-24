@@ -8,12 +8,16 @@ function formatLocalDate(date) {
 function getBookableDates(now = new Date()) {
     const today = new Date(now);
     today.setHours(0, 0, 0, 0);
-    return { today: formatLocalDate(today) };
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return { today: formatLocalDate(today), tomorrow: formatLocalDate(tomorrow) };
 }
 
 function isBookableDate(date, now) {
-    const { today } = getBookableDates(now);
-    return date === today;
+    const { today, tomorrow } = getBookableDates(now);
+    return date === today || date === tomorrow;
 }
 
 module.exports = { getBookableDates, isBookableDate };

@@ -65,9 +65,16 @@ const PORT = process.env.PORT || 5000;
 
 connectDB().then(async () => {
     await ensureDefaultMachines();
+
+    // Auto-complete expired bookings on startup and every 60 seconds
+    const { completeExpiredBookings } = require('./utils/slotCompleter');
+    await completeExpiredBookings();
+    setInterval(completeExpiredBookings, 60 * 1000);
+
     httpServer.listen(PORT, () => {
         console.log(`🚀 Server running on port ${PORT}`);
     });
 });
+
 
 module.exports = { app, io };

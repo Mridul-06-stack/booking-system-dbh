@@ -36,6 +36,11 @@ const studentSchema = new mongoose.Schema(
             required: [true, 'Room number is required'],
             trim: true,
         },
+        phone: {
+            type: String,
+            required: [true, 'Phone number is required'],
+            trim: true,
+        },
         passwordHash: {
             type: String,
             required: true,

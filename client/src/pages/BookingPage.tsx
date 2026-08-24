@@ -11,12 +11,19 @@ function formatLocalDate(date: Date) {
     return `${year}-${month}-${day}`;
 }
 
+function getTomorrowStr() {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return formatLocalDate(d);
+}
+
 export default function BookingPage() {
     const [machines, setMachines] = useState<any[]>([]);
     const [selectedMachine, setSelectedMachine] = useState('');
 
-    const today = formatLocalDate(new Date());
-    const date = today;
+    const todayStr = formatLocalDate(new Date());
+    const tomorrowStr = getTomorrowStr();
+    const [selectedDate, setSelectedDate] = useState(todayStr);
 
     const [slots, setSlots] = useState<any[]>([]);
     const [settings, setSettings] = useState<any>(null);
@@ -42,21 +49,21 @@ export default function BookingPage() {
         // Real-time updates
         const socket = io();
         socket.on('booking-created', (booking) => {
-            if (booking.machineId._id === selectedMachine && booking.date === date) {
+            if (booking.machineId._id === selectedMachine && booking.date === selectedDate) {
                 fetchSlots(); // refresh if currently viewing this machine+date
             }
         });
         return () => { socket.disconnect(); };
-    }, [selectedMachine, date]);
+    }, [selectedMachine, selectedDate]);
 
     useEffect(() => {
         fetchSlots();
-    }, [selectedMachine, date]);
+    }, [selectedMachine, selectedDate]);
 
     const fetchSlots = () => {
-        if (!selectedMachine || !date) return;
+        if (!selectedMachine || !selectedDate) return;
         setLoading(true);
-        api.get(`/bookings/slots?machineId=${selectedMachine}&date=${date}`)
+        api.get(`/bookings/slots?machineId=${selectedMachine}&date=${selectedDate}`)
             .then(res => {
                 setSlots(res.data.slots || []);
                 if (res.data.settings) setSettings(res.data.settings);
@@ -72,7 +79,7 @@ export default function BookingPage() {
         try {
             await api.post('/bookings', {
                 machineId: selectedMachine,
-                date,
+                date: selectedDate,
                 startTime: selectedSlot.startTime,
                 endTime: selectedSlot.endTime
             });
@@ -82,6 +89,8 @@ export default function BookingPage() {
         }
     };
 
+    const dateLabel = selectedDate === todayStr ? 'Today' : 'Tomorrow';
+
     return (
         <div>
             <Navbar />
@@ -90,7 +99,7 @@ export default function BookingPage() {
                     <div>
                         <h1 className="page-title">Slot Reservation Sheet</h1>
                         <p className="page-subtitle">
-                            Choose machine and time for today ({today}). Weekly quota limit is {settings?.weeklyQuota || 2} slots per student.
+                            Choose machine and time for {dateLabel} ({selectedDate}). Weekly quota limit is {settings?.weeklyQuota || 2} slots per student.
                         </p>
                     </div>
                 </div>
@@ -119,8 +128,39 @@ export default function BookingPage() {
                         </div>
                         <div>
                             <label style={{ display: 'block', fontSize: '0.83rem', marginBottom: '8px', color: 'var(--steel)' }}>Date</label>
-                            <div className="mono" style={{ padding: '8px 12px', background: 'rgba(47, 103, 130, 0.1)', borderRadius: '6px', border: '1px solid var(--line)', color: 'var(--detergent-blue)', fontWeight: 600 }}>
-                                📅 Today ({today})
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => { setSelectedDate(todayStr); setSelectedSlot(null); }}
+                                    style={{
+                                        padding: '8px 14px',
+                                        fontSize: '0.84rem',
+                                        borderRadius: '6px',
+                                        border: selectedDate === todayStr ? '2px solid var(--detergent-blue)' : '1px solid var(--line)',
+                                        background: selectedDate === todayStr ? 'rgba(47, 103, 130, 0.15)' : 'rgba(255,255,255,0.5)',
+                                        color: selectedDate === todayStr ? 'var(--detergent-blue)' : 'var(--ink)',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    📅 Today
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { setSelectedDate(tomorrowStr); setSelectedSlot(null); }}
+                                    style={{
+                                        padding: '8px 14px',
+                                        fontSize: '0.84rem',
+                                        borderRadius: '6px',
+                                        border: selectedDate === tomorrowStr ? '2px solid var(--detergent-blue)' : '1px solid var(--line)',
+                                        background: selectedDate === tomorrowStr ? 'rgba(47, 103, 130, 0.15)' : 'rgba(255,255,255,0.5)',
+                                        color: selectedDate === tomorrowStr ? 'var(--detergent-blue)' : 'var(--ink)',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    📅 Tomorrow
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -162,7 +202,7 @@ export default function BookingPage() {
                     <div className="panel" style={{ padding: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                         <div>
                             <p className="mono" style={{ fontSize: '0.8rem', color: 'var(--steel)', marginBottom: '4px' }}>Selected reservation</p>
-                            <h3 className="section-title" style={{ marginBottom: 0 }}>{date} | {selectedSlot.startTime} - {selectedSlot.endTime}</h3>
+                            <h3 className="section-title" style={{ marginBottom: 0 }}>{selectedDate} | {selectedSlot.startTime} - {selectedSlot.endTime}</h3>
                         </div>
                         <button className="btn-primary" onClick={handleBook}>Confirm Booking</button>
                     </div>

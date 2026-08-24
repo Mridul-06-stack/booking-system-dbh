@@ -25,16 +25,9 @@ type Slot = {
         rollNumber?: string;
         roomNumber?: string;
         hostel?: string;
+        phone?: string;
     } | null;
     bookingId?: string | null;
-};
-
-type HeatmapItem = {
-    startTime: string;
-    endTime: string;
-    count: number;
-    occupancyPercent: number;
-    level: 'low' | 'moderate' | 'peak';
 };
 
 type ScheduleItem = {
@@ -50,6 +43,7 @@ type ScheduleItem = {
         hostel?: string;
         roomNumber?: string;
         email: string;
+        phone?: string;
     };
     machineId: {
         _id: string;
@@ -66,21 +60,29 @@ function formatLocalDate(date: Date) {
     return `${year}-${month}-${day}`;
 }
 
+function getTomorrowStr() {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return formatLocalDate(d);
+}
+
 export default function DashboardPage() {
     const { student } = useAuth();
 
     // Data State
     const [machines, setMachines] = useState<Machine[]>([]);
     const [selectedMachineId, setSelectedMachineId] = useState<string>('');
-    
+
     const todayStr = formatLocalDate(new Date());
+    const tomorrowStr = getTomorrowStr();
+    const [selectedDate, setSelectedDate] = useState(todayStr);
 
     const [slots, setSlots] = useState<Slot[]>([]);
     const [settings, setSettings] = useState<any>(null);
     const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
 
     const [stats, setStats] = useState<any>(null);
-    const [heatmap, setHeatmap] = useState<HeatmapItem[]>([]);
+
     const [upcoming, setUpcoming] = useState<any[]>([]);
     const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
 
@@ -92,15 +94,14 @@ export default function DashboardPage() {
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
-        // Fetch Machines, Stats & Heatmap
+        // Fetch Machines, Stats
         Promise.all([
             api.get('/machines'),
             api.get('/dashboard/stats'),
             api.get('/dashboard/upcoming'),
             api.get('/dashboard/live-schedule'),
-            api.get('/dashboard/heatmap'),
         ])
-            .then(([machinesRes, statsRes, upcomingRes, scheduleRes, heatmapRes]) => {
+            .then(([machinesRes, statsRes, upcomingRes, scheduleRes]) => {
                 const availMachines = machinesRes.data.machines || [];
                 setMachines(availMachines);
                 if (availMachines.length > 0) {
@@ -109,7 +110,6 @@ export default function DashboardPage() {
                 setStats(statsRes.data.stats);
                 setUpcoming(upcomingRes.data.bookings || []);
                 setSchedule(scheduleRes.data.schedule || []);
-                setHeatmap(heatmapRes.data.heatmap || []);
             })
             .catch((err) => {
                 setActionMessage({ type: 'error', text: err.response?.data?.message || 'Failed to load initial data' });
@@ -143,19 +143,17 @@ export default function DashboardPage() {
         if (selectedMachineId) {
             fetchSlots();
         }
-    }, [selectedMachineId]);
+    }, [selectedMachineId, selectedDate]);
 
     const refreshDashboardData = () => {
         Promise.all([
             api.get('/dashboard/stats'),
             api.get('/dashboard/upcoming'),
             api.get('/dashboard/live-schedule'),
-            api.get('/dashboard/heatmap'),
-        ]).then(([statsRes, upcomingRes, scheduleRes, heatmapRes]) => {
+        ]).then(([statsRes, upcomingRes, scheduleRes]) => {
             setStats(statsRes.data.stats);
             setUpcoming(upcomingRes.data.bookings || []);
             setSchedule(scheduleRes.data.schedule || []);
-            setHeatmap(heatmapRes.data.heatmap || []);
         });
         if (selectedMachineId) {
             fetchSlots();
@@ -165,7 +163,7 @@ export default function DashboardPage() {
     const fetchSlots = () => {
         setLoadingSlots(true);
         setSelectedSlot(null);
-        api.get(`/bookings/slots?machineId=${selectedMachineId}&date=${todayStr}`)
+        api.get(`/bookings/slots?machineId=${selectedMachineId}&date=${selectedDate}`)
             .then((res) => {
                 setSlots(res.data.slots || []);
                 setSettings(res.data.settings || null);
@@ -182,7 +180,7 @@ export default function DashboardPage() {
         try {
             await api.post('/bookings', {
                 machineId: selectedMachineId,
-                date: todayStr,
+                date: selectedDate,
                 startTime: selectedSlot.startTime,
                 endTime: selectedSlot.endTime,
             });
@@ -202,7 +200,7 @@ export default function DashboardPage() {
         try {
             const res = await api.post('/bookings/waitlist', {
                 machineId: selectedMachineId,
-                date: todayStr,
+                date: selectedDate,
                 startTime: slot.startTime,
                 endTime: slot.endTime,
             });
@@ -233,11 +231,14 @@ export default function DashboardPage() {
         return (
             (item.studentId?.name || '').toLowerCase().includes(q) ||
             (item.studentId?.rollNumber || '').toLowerCase().includes(q) ||
+            (item.studentId?.phone || '').toLowerCase().includes(q) ||
             (item.machineId?.machineNumber || '').toLowerCase().includes(q) ||
             (item.date || '').includes(q) ||
             (item.startTime || '').includes(q)
         );
     });
+
+    const dateLabel = selectedDate === todayStr ? 'Today' : 'Tomorrow';
 
     return (
         <div>
@@ -248,7 +249,7 @@ export default function DashboardPage() {
                 <div className="board-header">
                     <div>
                         <h1 className="page-title">Washing Machine Slot Portal</h1>
-                        <p className="page-subtitle">Select a machine tab below to view today's slots and who booked them, or reserve an open slot.</p>
+                        <p className="page-subtitle">Select a machine tab below to view slots and who booked them, or reserve an open slot.</p>
                     </div>
                 </div>
 
@@ -267,51 +268,10 @@ export default function DashboardPage() {
                     </div>
                 )}
 
-                {/* FEATURE: Peak Hours Heatmap Analytics Bar */}
-                {heatmap.length > 0 && (
-                    <div className="panel" style={{ padding: '14px', marginBottom: '18px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
-                            <div>
-                                <h3 className="section-title" style={{ marginBottom: '2px' }}>🔥 Laundry Room Demand Heatmap</h3>
-                                <span className="page-subtitle">Hourly traffic indicator to help you pick low-demand, stress-free time slots.</span>
-                            </div>
-                            <div style={{ display: 'flex', gap: '12px', fontSize: '0.72rem', fontWeight: 600 }}>
-                                <span style={{ color: '#2e7d32' }}>🟢 Low Traffic (&lt;35%)</span>
-                                <span style={{ color: '#8a6a2f' }}>🟡 Moderate (35-65%)</span>
-                                <span style={{ color: '#c62828' }}>🔴 Rush Hour (&gt;65%)</span>
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${heatmap.length}, 1fr)`, gap: '4px', marginTop: '10px' }}>
-                            {heatmap.map((h) => {
-                                const barColor = h.level === 'peak' ? '#c62828' : h.level === 'moderate' ? '#8a6a2f' : '#2e7d32';
-                                return (
-                                    <div key={h.startTime} style={{ textAlign: 'center' }} title={`${h.startTime}: ${h.occupancyPercent}% Demand (${h.count} bookings)`}>
-                                        <div style={{ height: '40px', background: 'rgba(0,0,0,0.04)', borderRadius: '4px', display: 'flex', alignItems: 'flex-end', padding: '2px' }}>
-                                            <div
-                                                style={{
-                                                    width: '100%',
-                                                    height: `${Math.max(15, h.occupancyPercent)}%`,
-                                                    background: barColor,
-                                                    borderRadius: '3px',
-                                                    transition: 'height 0.3s ease',
-                                                }}
-                                            />
-                                        </div>
-                                        <div className="mono" style={{ fontSize: '0.66rem', marginTop: '4px', color: 'var(--steel)' }}>
-                                            {h.startTime.split(':')[0]}h
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
                 {/* FEATURE 1: Machine Selector Tabs */}
                 <div className="panel" style={{ padding: '14px', marginBottom: '18px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
-                        
+
                         {/* Machine Switcher Tabs (M1, M2, M3...) */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                             <span style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--steel)' }}>Select Machine:</span>
@@ -343,20 +303,52 @@ export default function DashboardPage() {
                             })}
                         </div>
 
-                        {/* Date Indicator (Today Only) */}
-                        <div className="mono" style={{ fontSize: '0.84rem', padding: '6px 12px', background: 'rgba(47, 103, 130, 0.1)', borderRadius: '6px', border: '1px solid var(--line)', color: 'var(--detergent-blue)', fontWeight: 600 }}>
-                            📅 Today ({todayStr})
+                        {/* Date Toggle: Today / Tomorrow */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <button
+                                onClick={() => setSelectedDate(todayStr)}
+                                style={{
+                                    padding: '6px 14px',
+                                    fontSize: '0.84rem',
+                                    borderRadius: '6px',
+                                    border: selectedDate === todayStr ? '2px solid var(--detergent-blue)' : '1px solid var(--line)',
+                                    background: selectedDate === todayStr ? 'rgba(47, 103, 130, 0.15)' : 'rgba(255,255,255,0.5)',
+                                    color: selectedDate === todayStr ? 'var(--detergent-blue)' : 'var(--ink)',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                📅 Today
+                            </button>
+                            <button
+                                onClick={() => setSelectedDate(tomorrowStr)}
+                                style={{
+                                    padding: '6px 14px',
+                                    fontSize: '0.84rem',
+                                    borderRadius: '6px',
+                                    border: selectedDate === tomorrowStr ? '2px solid var(--detergent-blue)' : '1px solid var(--line)',
+                                    background: selectedDate === tomorrowStr ? 'rgba(47, 103, 130, 0.15)' : 'rgba(255,255,255,0.5)',
+                                    color: selectedDate === tomorrowStr ? 'var(--detergent-blue)' : 'var(--ink)',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                📅 Tomorrow
+                            </button>
+                            <span className="mono" style={{ fontSize: '0.78rem', color: 'var(--steel)', marginLeft: '4px' }}>
+                                ({selectedDate})
+                            </span>
                         </div>
                     </div>
 
                     {/* FEATURE 2 & 3: Main Slot Timetable (Left) + Book A Slot Action Panel (Right) */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '18px' }} className="split-grid-responsive">
-                        
+
                         {/* Timetable Grid with Student Names & Waitlist Button */}
                         <div style={{ background: 'rgba(255,255,255,0.4)', padding: '14px', borderRadius: '8px', border: '1px solid var(--line)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                                 <h3 className="section-title" style={{ marginBottom: 0 }}>
-                                    Timetable Matrix for Machine M-{activeMachine?.machineNumber} (Today)
+                                    Timetable Matrix for Machine M-{activeMachine?.machineNumber} ({dateLabel})
                                 </h3>
                                 <div className="mono" style={{ fontSize: '0.74rem', color: 'var(--steel)' }}>
                                     Operating: {settings ? `${String(settings.operatingStartHour).padStart(2, '0')}:00 – ${String(settings.operatingEndHour).padStart(2, '0')}:00` : '06:00 – 22:00'}
@@ -424,6 +416,11 @@ export default function DashboardPage() {
                                                                     {slot.bookedBy.rollNumber} {slot.bookedBy.roomNumber ? `(Rm ${slot.bookedBy.roomNumber})` : ''}
                                                                 </div>
                                                             )}
+                                                            {slot.bookedBy?.phone && (
+                                                                <div className="mono" style={{ fontSize: '0.68rem', color: 'var(--steel)' }}>
+                                                                    📞 {slot.bookedBy.phone}
+                                                                </div>
+                                                            )}
 
                                                             {/* FEATURE: Waitlist Alert Button for Booked Slot */}
                                                             {!isMyBooking && (
@@ -473,7 +470,7 @@ export default function DashboardPage() {
                         <div style={{ background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                             <div>
                                 <h3 className="section-title" style={{ marginBottom: '10px' }}>⚡ Reserve Slot</h3>
-                                
+
                                 {/* Quota Widget */}
                                 <div style={{ background: 'rgba(236, 233, 222, 0.4)', padding: '10px', borderRadius: '6px', marginBottom: '14px', border: '1px solid var(--line)' }}>
                                     <div style={{ fontSize: '0.8rem', color: 'var(--steel)' }}>Weekly Slot Quota</div>
@@ -492,7 +489,7 @@ export default function DashboardPage() {
                                             Machine M-{activeMachine?.machineNumber} ({activeMachine?.hostel})
                                         </div>
                                         <div className="mono" style={{ fontSize: '0.84rem', marginTop: '2px', color: 'var(--detergent-blue)' }}>
-                                            Today ({todayStr}) | {selectedSlot.startTime} – {selectedSlot.endTime}
+                                            {dateLabel} ({selectedDate}) | {selectedSlot.startTime} – {selectedSlot.endTime}
                                         </div>
                                         <div style={{ fontSize: '0.75rem', color: 'var(--steel)', marginTop: '6px' }}>
                                             Duration: {settings?.slotDurationMinutes || 60} mins
@@ -520,10 +517,10 @@ export default function DashboardPage() {
                                     {bookingActionLoading
                                         ? 'Reserving Slot...'
                                         : stats?.weeklyRemaining <= 0
-                                        ? 'Weekly Quota Reached'
-                                        : selectedSlot
-                                        ? 'Confirm Booking'
-                                        : 'Select Slot First'}
+                                            ? 'Weekly Quota Reached'
+                                            : selectedSlot
+                                                ? 'Confirm Booking'
+                                                : 'Select Slot First'}
                                 </button>
                             </div>
                         </div>
@@ -534,12 +531,12 @@ export default function DashboardPage() {
                 <div className="panel" style={{ padding: '16px', marginBottom: '18px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '12px' }}>
                         <div>
-                            <h2 className="section-title" style={{ marginBottom: '2px' }}>📋 Today's Reservations Timetable</h2>
-                            <p className="page-subtitle" style={{ marginBottom: 0 }}>Full schedule of who has booked what slot across all machines today.</p>
+                            <h2 className="section-title" style={{ marginBottom: '2px' }}>📋 Reservations Timetable</h2>
+                            <p className="page-subtitle" style={{ marginBottom: 0 }}>Full schedule of who has booked what slot across all machines.</p>
                         </div>
                         <input
                             type="text"
-                            placeholder="Filter schedule by student, roll, machine..."
+                            placeholder="Filter by student, roll, phone, machine..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             style={{ padding: '6px 12px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--line)', minWidth: '220px' }}
@@ -548,7 +545,7 @@ export default function DashboardPage() {
 
                     {filteredSchedule.length === 0 ? (
                         <div className="mono" style={{ fontSize: '0.84rem', color: 'var(--steel)', padding: '16px', textAlign: 'center' }}>
-                            No active reservations for today.
+                            No active reservations found.
                         </div>
                     ) : (
                         <div style={{ overflowX: 'auto', maxHeight: '300px' }}>
@@ -558,6 +555,7 @@ export default function DashboardPage() {
                                         <th>Date & Time</th>
                                         <th>Machine</th>
                                         <th>Student Name</th>
+                                        <th>Phone</th>
                                         <th>Roll Number</th>
                                         <th>Hostel & Room</th>
                                         <th>Status</th>
@@ -574,6 +572,7 @@ export default function DashboardPage() {
                                                 <div style={{ fontWeight: 600 }}>Machine M-{item.machineId?.machineNumber || '—'}</div>
                                             </td>
                                             <td>{item.studentId?.name || '—'}</td>
+                                            <td className="mono" style={{ fontSize: '0.82rem' }}>📞 {item.studentId?.phone || '—'}</td>
                                             <td className="mono" style={{ fontSize: '0.82rem' }}>{item.studentId?.rollNumber || '—'}</td>
                                             <td>{item.studentId?.hostel || '—'}{item.studentId?.roomNumber ? `, Room ${item.studentId.roomNumber}` : ''}</td>
                                             <td>
@@ -592,7 +591,7 @@ export default function DashboardPage() {
                     <h2 className="section-title">Your Confirmed Bookings</h2>
                     {upcoming.length === 0 ? (
                         <div className="mono" style={{ fontSize: '0.86rem', color: 'var(--steel)' }}>
-                            No upcoming bookings for your account today. Select an open slot above to reserve.
+                            No upcoming bookings for your account. Select an open slot above to reserve.
                         </div>
                     ) : (
                         <div style={{ display: 'grid', gap: '10px' }}>

@@ -9,6 +9,7 @@ export default function RegisterPage() {
         rollNumber: '',
         hostel: 'Dhauladhar Boys Hostel',
         roomNumber: '',
+        phone: '',
         password: '',
         confirmPassword: ''
     });
@@ -36,6 +37,7 @@ export default function RegisterPage() {
                 rollNumber: formData.rollNumber,
                 hostel: formData.hostel,
                 roomNumber: formData.roomNumber,
+                phone: formData.phone,
                 password: formData.password
             });
             navigate('/dashboard');
@@ -90,6 +92,11 @@ export default function RegisterPage() {
                             <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', color: 'var(--steel)' }}>Room</label>
                             <input type="text" name="roomNumber" required className="input-field" value={formData.roomNumber} onChange={handleChange} />
                         </div>
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '6px', color: 'var(--steel)' }}>Phone Number</label>
+                        <input type="tel" name="phone" required className="input-field" placeholder="e.g. 9876543210" value={formData.phone} onChange={handleChange} />
                     </div>
 
                     <div>
