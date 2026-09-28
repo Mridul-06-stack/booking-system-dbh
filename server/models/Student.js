@@ -43,7 +43,11 @@ const studentSchema = new mongoose.Schema(
         },
         passwordHash: {
             type: String,
-            required: true,
+        },
+        authProvider: {
+            type: String,
+            enum: ['local', 'google'],
+            default: 'local',
         },
         role: {
             type: String,

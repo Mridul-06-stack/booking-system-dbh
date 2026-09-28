@@ -115,3 +115,93 @@ exports.getProfile = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// POST /api/auth/google
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+exports.googleAuth = async (req, res) => {
+    try {
+        const { credential, hostel, roomNumber, phone, rollNumber } = req.body;
+
+        if (!credential) {
+            return res.status(400).json({ success: false, message: 'Google credential missing' });
+        }
+
+        const ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+
+        const payload = ticket.getPayload();
+        const { email, name } = payload;
+
+        if (!email.endsWith('@nith.ac.in')) {
+            return res.status(403).json({ success: false, message: 'Only @nith.ac.in emails are permitted to log in via Google.' });
+        }
+
+        let student = await Student.findOne({ email });
+
+        if (!student) {
+            // New user via Google Auth requires extra registration fields if they don't have them
+            if (!rollNumber || !roomNumber || !phone) {
+                return res.status(202).json({
+                    success: true,
+                    requireExtraDetails: true,
+                    email,
+                    name,
+                    message: 'New internal account setup required. Please provide hostel details.'
+                });
+            }
+
+            // Check if allowed list restriction is enabled
+            const settings = await SystemSettings.getSettings();
+            const allowedCount = await AllowedUser.countDocuments();
+
+            const normalizedEmail = email.toLowerCase().trim();
+            const normalizedRoll = rollNumber.toUpperCase().trim();
+
+            if (settings.requireAllowedList || allowedCount > 0) {
+                const isAllowed = await AllowedUser.findOne({
+                    $or: [
+                        { email: normalizedEmail },
+                        { rollNumber: normalizedRoll },
+                    ],
+                });
+
+                if (!isAllowed) {
+                    return res.status(403).json({
+                        success: false,
+                        message: 'Registration restricted: Your email/roll number is not in the pre-authorized allowed list.',
+                    });
+                }
+            }
+
+            student = await Student.create({
+                name,
+                email: normalizedEmail,
+                rollNumber: normalizedRoll,
+                hostel: hostel || 'Dhauladhar Boys Hostel',
+                roomNumber,
+                phone,
+                authProvider: 'google'
+            });
+        }
+
+        if (student.isBlocked) {
+            return res.status(403).json({ success: false, message: 'Your account has been blocked. Contact admin.' });
+        }
+
+        const token = generateToken(student._id);
+
+        res.json({
+            success: true,
+            token,
+            student,
+        });
+
+    } catch (error) {
+        console.error('Google Auth Error:', error);
+        res.status(500).json({ success: false, message: 'Failed to authenticate with Google' });
+    }
+};

@@ -17,6 +17,7 @@ interface AuthContextType {
     token: string | null;
     loading: boolean;
     login: (email: string, password: string) => Promise<void>;
+    googleLogin: (credential: string, formData?: any) => Promise<any>;
     register: (data: RegisterData) => Promise<void>;
     logout: () => void;
     isAdmin: boolean;
@@ -61,6 +62,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStudent(res.data.student);
     };
 
+    const googleLogin = async (credential: string, formData?: any) => {
+        const payload = formData ? { credential, ...formData } : { credential };
+        const res = await api.post('/auth/google', payload);
+
+        if (res.status === 202) {
+            // Needs more info
+            return res.data;
+        }
+
+        localStorage.setItem('token', res.data.token);
+        setToken(res.data.token);
+        setStudent(res.data.student);
+        return res.data;
+    };
+
     const register = async (data: RegisterData) => {
         const res = await api.post('/auth/register', data);
         localStorage.setItem('token', res.data.token);
@@ -76,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return (
         <AuthContext.Provider
-            value={{ student, token, loading, login, register, logout, isAdmin: student?.role === 'admin' }}
+            value={{ student, token, loading, login, googleLogin, register, logout, isAdmin: student?.role === 'admin' }}
         >
             {children}
         </AuthContext.Provider>

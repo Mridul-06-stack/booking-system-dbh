@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { GoogleLogin } from '@react-oauth/google';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const { login } = useAuth();
+    const { login, googleLogin } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -24,6 +25,22 @@ export default function LoginPage() {
         }
     };
 
+    const handleGoogleSuccess = async (credentialResponse: any) => {
+        setError('');
+        try {
+            if (credentialResponse.credential) {
+                const res = await googleLogin(credentialResponse.credential);
+                if (res.requireExtraDetails) {
+                    navigate('/register', { state: { googleData: res, credential: credentialResponse.credential } });
+                } else {
+                    navigate('/dashboard');
+                }
+            }
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Google Auth failed');
+        }
+    };
+
     return (
         <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
             <div className="panel" style={{ width: '100%', maxWidth: '420px', padding: '24px' }}>
@@ -37,6 +54,19 @@ export default function LoginPage() {
                         {error}
                     </div>
                 )}
+
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                    <GoogleLogin
+                        onSuccess={handleGoogleSuccess}
+                        onError={() => setError('Google Log in failed.')}
+                    />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0' }}>
+                    <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border)' }}></div>
+                    <span style={{ padding: '0 10px', fontSize: '14px', color: 'var(--steel)' }}>OR ACCOUNT</span>
+                    <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border)' }}></div>
+                </div>
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     <div>

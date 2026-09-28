@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const { z } = require('zod');
-const { register, login, getProfile } = require('../controllers/authController');
+const { register, login, getProfile, googleAuth } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 
@@ -28,6 +28,7 @@ const loginSchema = z.object({
 
 router.post('/register', authLimiter, validate(registerSchema), register);
 router.post('/login', authLimiter, validate(loginSchema), login);
+router.post('/google', authLimiter, googleAuth);
 router.get('/profile', protect, getProfile);
 
 module.exports = router;
