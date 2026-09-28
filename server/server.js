@@ -11,9 +11,15 @@ dotenv.config({ path: '../.env' });
 
 const app = express();
 const httpServer = createServer(app);
+const allowedOrigins = [
+    'http://localhost:5173',
+    'https://booking-system-dbh.vercel.app',
+    process.env.CLIENT_URL
+].filter(Boolean);
+
 const io = new Server(httpServer, {
     cors: {
-        origin: process.env.CLIENT_URL || 'http://localhost:5173',
+        origin: allowedOrigins,
         methods: ['GET', 'POST', 'PUT', 'DELETE'],
     },
 });
@@ -22,7 +28,7 @@ const io = new Server(httpServer, {
 app.set('io', io);
 
 // Middleware
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }));
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 
 // Health check
