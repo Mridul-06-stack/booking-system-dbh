@@ -356,3 +356,48 @@ exports.getAllBookings = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+// POST /api/bookings/:id/checkin — verify student arrival at machine
+exports.checkInBooking = async (req, res) => {
+    try {
+        const booking = await Booking.findById(req.params.id)
+            .populate('machineId', 'machineNumber hostel location')
+            .populate('studentId', 'name rollNumber hostel roomNumber email');
+
+        if (!booking) {
+            return res.status(404).json({ success: false, message: 'Booking ID not found' });
+        }
+
+        if (booking.status === 'cancelled') {
+            return res.status(400).json({
+                success: false,
+                message: 'Check-in rejected: This booking was cancelled',
+            });
+        }
+
+        if (booking.checkInTime) {
+            return res.status(200).json({
+                success: true,
+                message: `Already checked in at ${new Date(booking.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} for ${booking.studentId?.name || 'Student'} (Machine M${booking.machineId?.machineNumber || ''})`,
+                booking,
+            });
+        }
+
+        booking.checkInTime = new Date();
+        await booking.save();
+
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('booking-checked-in', booking);
+        }
+
+        res.json({
+            success: true,
+            message: `Check-in verified successfully for ${booking.studentId?.name || 'Student'} (${booking.studentId?.rollNumber || ''}) on Machine M${booking.machineId?.machineNumber || ''}!`,
+            booking,
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+

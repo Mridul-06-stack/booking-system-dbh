@@ -1,4 +1,4 @@
-import { useState, useEffect, type ChangeEvent } from 'react';
+import { useState, useEffect, useCallback, type ChangeEvent } from 'react';
 import api from '../../services/api';
 import Navbar from '../../components/Navbar';
 
@@ -57,11 +57,7 @@ export default function SettingsPage() {
     // Search filter
     const [searchTerm, setSearchTerm] = useState('');
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
             const [settingsRes, allowedRes] = await Promise.all([
@@ -75,7 +71,11 @@ export default function SettingsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     const handleSettingsSave = async () => {
         setSavingSettings(true);

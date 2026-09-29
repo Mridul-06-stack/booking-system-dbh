@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 import Navbar from '../../components/Navbar';
 
@@ -7,15 +7,21 @@ export default function MachinesPage() {
     const [loading, setLoading] = useState(true);
     const [newMachine, setNewMachine] = useState({ machineNumber: '', hostel: 'Dhauladhar Boys Hostel', location: '' });
 
-    useEffect(() => {
-        fetchMachines();
+    const fetchMachines = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await api.get('/machines');
+            setMachines(res.data.machines || []);
+        } catch {
+            setMachines([]);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    const fetchMachines = () => {
-        api.get('/machines')
-            .then(res => setMachines(res.data.machines))
-            .finally(() => setLoading(false));
-    };
+    useEffect(() => {
+        fetchMachines();
+    }, [fetchMachines]);
 
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -33,8 +39,8 @@ export default function MachinesPage() {
         try {
             await api.delete(`/machines/${id}`);
             fetchMachines();
-        } catch (err) {
-            alert('Failed to delete');
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Failed to delete');
         }
     };
 
@@ -43,8 +49,8 @@ export default function MachinesPage() {
         try {
             await api.patch(`/machines/${id}/status`, { status: newStatus });
             fetchMachines();
-        } catch (err) {
-            alert('Failed to update status');
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Failed to update status');
         }
     };
 

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
-import { io } from 'socket.io-client';
+import socket from '../services/socket';
 
 type Machine = {
     _id: string;
@@ -93,6 +93,34 @@ export default function DashboardPage() {
     // Live Schedule Table filter
     const [searchQuery, setSearchQuery] = useState('');
 
+    const fetchSlots = useCallback(async () => {
+        if (!selectedMachineId) return;
+        setLoadingSlots(true);
+        setSelectedSlot(null);
+        try {
+            const res = await api.get(`/bookings/slots?machineId=${selectedMachineId}&date=${selectedDate}`);
+            setSlots(res.data.slots || []);
+            setSettings(res.data.settings || null);
+        } catch (err: any) {
+            setActionMessage({ type: 'error', text: err.response?.data?.message || 'Failed to load slots' });
+        } finally {
+            setLoadingSlots(false);
+        }
+    }, [selectedMachineId, selectedDate]);
+
+    const refreshDashboardData = useCallback(() => {
+        Promise.all([
+            api.get('/dashboard/stats'),
+            api.get('/dashboard/upcoming'),
+            api.get('/dashboard/live-schedule'),
+        ]).then(([statsRes, upcomingRes, scheduleRes]) => {
+            setStats(statsRes.data.stats);
+            setUpcoming(upcomingRes.data.bookings || []);
+            setSchedule(scheduleRes.data.schedule || []);
+        }).catch(() => {});
+        fetchSlots();
+    }, [fetchSlots]);
+
     useEffect(() => {
         // Fetch Machines, Stats
         Promise.all([
@@ -114,63 +142,53 @@ export default function DashboardPage() {
             .catch((err) => {
                 setActionMessage({ type: 'error', text: err.response?.data?.message || 'Failed to load initial data' });
             });
+    }, []);
 
-        // WebSockets for Real-time Updates
-        const socket = io();
-        socket.on('machine-status-update', (updatedMachine: Machine) => {
+    useEffect(() => {
+        const handleMachineStatusUpdate = (updatedMachine: Machine) => {
             setMachines((prev) => prev.map((m) => (m._id === updatedMachine._id ? updatedMachine : m)));
-        });
+        };
 
-        socket.on('booking-created', () => {
+        const handleBookingCreated = () => {
             refreshDashboardData();
-        });
+        };
 
-        socket.on('booking-cancelled', () => {
+        const handleBookingCancelled = () => {
             refreshDashboardData();
-        });
+        };
 
-        socket.on('waitlist-slot-opened', (data: any) => {
-            setActionMessage({ type: 'success', text: `🔔 ALERT: A waitlisted slot on Machine M-${data.machineId?.machineNumber || ''} at ${data.startTime} just opened up! Reserve it now.` });
+        const handleBookingCheckedIn = () => {
             refreshDashboardData();
-        });
+        };
+
+        const handleWaitlistOpened = (data: any) => {
+            setActionMessage({
+                type: 'success',
+                text: `🔔 ALERT: A waitlisted slot on Machine M-${data.machineId?.machineNumber || ''} at ${data.startTime} just opened up! Reserve it now.`
+            });
+            refreshDashboardData();
+        };
+
+        socket.on('machine-status-update', handleMachineStatusUpdate);
+        socket.on('booking-created', handleBookingCreated);
+        socket.on('booking-cancelled', handleBookingCancelled);
+        socket.on('booking-checked-in', handleBookingCheckedIn);
+        socket.on('waitlist-slot-opened', handleWaitlistOpened);
 
         return () => {
-            socket.disconnect();
+            socket.off('machine-status-update', handleMachineStatusUpdate);
+            socket.off('booking-created', handleBookingCreated);
+            socket.off('booking-cancelled', handleBookingCancelled);
+            socket.off('booking-checked-in', handleBookingCheckedIn);
+            socket.off('waitlist-slot-opened', handleWaitlistOpened);
         };
-    }, []);
+    }, [refreshDashboardData]);
 
     useEffect(() => {
         if (selectedMachineId) {
             fetchSlots();
         }
-    }, [selectedMachineId, selectedDate]);
-
-    const refreshDashboardData = () => {
-        Promise.all([
-            api.get('/dashboard/stats'),
-            api.get('/dashboard/upcoming'),
-            api.get('/dashboard/live-schedule'),
-        ]).then(([statsRes, upcomingRes, scheduleRes]) => {
-            setStats(statsRes.data.stats);
-            setUpcoming(upcomingRes.data.bookings || []);
-            setSchedule(scheduleRes.data.schedule || []);
-        });
-        if (selectedMachineId) {
-            fetchSlots();
-        }
-    };
-
-    const fetchSlots = () => {
-        setLoadingSlots(true);
-        setSelectedSlot(null);
-        api.get(`/bookings/slots?machineId=${selectedMachineId}&date=${selectedDate}`)
-            .then((res) => {
-                setSlots(res.data.slots || []);
-                setSettings(res.data.settings || null);
-            })
-            .catch((err) => setActionMessage({ type: 'error', text: err.response?.data?.message || 'Failed to load slots' }))
-            .finally(() => setLoadingSlots(false));
-    };
+    }, [selectedMachineId, selectedDate, fetchSlots]);
 
     const handleConfirmBooking = async () => {
         if (!selectedSlot || !selectedMachineId) return;

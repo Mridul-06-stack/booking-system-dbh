@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { GoogleLogin } from '@react-oauth/google';
+import { GoogleLogin, googleLogout } from '@react-oauth/google';
 
 export default function RegisterPage() {
     const location = useLocation();
@@ -23,6 +23,11 @@ export default function RegisterPage() {
     const [loading, setLoading] = useState(false);
     const { register, googleLogin } = useAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        // Reset Google Identity Services auto-selection so it always presents the account chooser popup
+        googleLogout();
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -121,7 +126,14 @@ export default function RegisterPage() {
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
                             <GoogleLogin
                                 onSuccess={handleGoogleSuccess}
-                                onError={() => setError('Google Log in failed.')}
+                                onError={() => setError('Google Sign up failed.')}
+                                hosted_domain="nith.ac.in"
+                                auto_select={false}
+                                use_fedcm_for_button={false}
+                                use_fedcm_for_prompt={false}
+                                text="signup_with"
+                                shape="pill"
+                                theme="outline"
                             />
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0' }}>

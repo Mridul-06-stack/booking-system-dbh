@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
-import { io } from 'socket.io-client';
+import socket from '../services/socket';
 
 function formatLocalDate(date: Date) {
     const year = date.getFullYear();
@@ -34,43 +34,56 @@ export default function BookingPage() {
 
     const navigate = useNavigate();
 
+    const fetchSlots = useCallback(async () => {
+        if (!selectedMachine || !selectedDate) return;
+        setLoading(true);
+        try {
+            const res = await api.get(`/bookings/slots?machineId=${selectedMachine}&date=${selectedDate}`);
+            setSlots(res.data.slots || []);
+            if (res.data.settings) setSettings(res.data.settings);
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to fetch slots');
+        } finally {
+            setLoading(false);
+        }
+    }, [selectedMachine, selectedDate]);
+
     useEffect(() => {
         // Fetch machines
         api.get('/machines')
             .then(res => {
-                const avail = res.data.machines.filter((m: any) => m.status === 'available');
+                const avail = (res.data.machines || []).filter((m: any) => m.status === 'available');
                 setMachines(avail);
                 if (avail.length > 0 && !selectedMachine) {
                     setSelectedMachine(avail[0]._id);
                 }
             })
             .catch(err => setError(err.response?.data?.message || 'Failed to load machines'));
-
-        // Real-time updates
-        const socket = io();
-        socket.on('booking-created', (booking) => {
-            if (booking.machineId._id === selectedMachine && booking.date === selectedDate) {
-                fetchSlots(); // refresh if currently viewing this machine+date
-            }
-        });
-        return () => { socket.disconnect(); };
-    }, [selectedMachine, selectedDate]);
+    }, [selectedMachine]);
 
     useEffect(() => {
         fetchSlots();
-    }, [selectedMachine, selectedDate]);
 
-    const fetchSlots = () => {
-        if (!selectedMachine || !selectedDate) return;
-        setLoading(true);
-        api.get(`/bookings/slots?machineId=${selectedMachine}&date=${selectedDate}`)
-            .then(res => {
-                setSlots(res.data.slots || []);
-                if (res.data.settings) setSettings(res.data.settings);
-            })
-            .catch(err => setError(err.response?.data?.message || 'Failed to fetch slots'))
-            .finally(() => setLoading(false));
-    };
+        const handleBookingCreated = (booking: any) => {
+            if (booking?.machineId?._id === selectedMachine && booking?.date === selectedDate) {
+                fetchSlots();
+            }
+        };
+
+        const handleBookingCancelled = (booking: any) => {
+            if (booking?.machineId === selectedMachine && booking?.date === selectedDate) {
+                fetchSlots();
+            }
+        };
+
+        socket.on('booking-created', handleBookingCreated);
+        socket.on('booking-cancelled', handleBookingCancelled);
+
+        return () => {
+            socket.off('booking-created', handleBookingCreated);
+            socket.off('booking-cancelled', handleBookingCancelled);
+        };
+    }, [selectedMachine, selectedDate, fetchSlots]);
 
     const handleBook = async () => {
         if (!selectedSlot) return;

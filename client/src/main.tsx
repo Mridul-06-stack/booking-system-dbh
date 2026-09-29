@@ -13,6 +13,7 @@ import AdminMachinesPage from './pages/admin/MachinesPage';
 import AnalyticsPage from './pages/admin/AnalyticsPage';
 import StudentsPage from './pages/admin/StudentsPage';
 import SettingsPage from './pages/admin/SettingsPage';
+import ScannerPage from './pages/admin/ScannerPage';
 
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import './index.css';
@@ -38,6 +39,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/admin/machines" element={<ProtectedRoute adminOnly><AdminMachinesPage /></ProtectedRoute>} />
             <Route path="/admin/analytics" element={<ProtectedRoute adminOnly><AnalyticsPage /></ProtectedRoute>} />
             <Route path="/admin/students" element={<ProtectedRoute adminOnly><StudentsPage /></ProtectedRoute>} />
+            <Route path="/admin/scanner" element={<ProtectedRoute adminOnly><ScannerPage /></ProtectedRoute>} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

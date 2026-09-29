@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 import Navbar from '../../components/Navbar';
 
@@ -6,23 +6,29 @@ export default function StudentsPage() {
     const [students, setStudents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchStudents();
+    const fetchStudents = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await api.get('/admin/students');
+            setStudents(res.data.students || []);
+        } catch {
+            setStudents([]);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    const fetchStudents = () => {
-        api.get('/admin/students')
-            .then(res => setStudents(res.data.students))
-            .finally(() => setLoading(false));
-    };
+    useEffect(() => {
+        fetchStudents();
+    }, [fetchStudents]);
 
     const toggleBlock = async (id: string, isBlocked: boolean) => {
         if (!confirm(`Are you sure you want to ${isBlocked ? 'unblock' : 'block'} this student?`)) return;
         try {
             await api.patch(`/admin/students/${id}/block`);
             fetchStudents();
-        } catch (err) {
-            alert('Failed to update student status');
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Failed to update student status');
         }
     };
 

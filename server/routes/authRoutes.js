@@ -16,9 +16,10 @@ const registerSchema = z.object({
     name: z.string().min(3),
     email: z.string().email(),
     password: z.string().min(6),
-    rollNumber: z.string().min(4),
+    rollNumber: z.string().min(3),
     hostel: z.string(),
-    roomNumber: z.string()
+    roomNumber: z.string(),
+    phone: z.string().min(7),
 });
 
 const loginSchema = z.object({

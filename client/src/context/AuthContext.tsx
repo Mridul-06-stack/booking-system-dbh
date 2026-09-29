@@ -37,22 +37,34 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [student, setStudent] = useState<Student | null>(null);
-    const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-    const [loading, setLoading] = useState(true);
+    const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
+    const [loading, setLoading] = useState<boolean>(() => Boolean(localStorage.getItem('token')));
 
     useEffect(() => {
-        if (token) {
-            api
-                .get('/auth/profile')
-                .then((res) => setStudent(res.data.student))
-                .catch(() => {
-                    localStorage.removeItem('token');
-                    setToken(null);
-                })
-                .finally(() => setLoading(false));
-        } else {
-            setLoading(false);
+        if (!token) {
+            return;
         }
+
+        let isMounted = true;
+        api
+            .get('/auth/profile')
+            .then((res) => {
+                if (isMounted) setStudent(res.data.student);
+            })
+            .catch(() => {
+                localStorage.removeItem('token');
+                if (isMounted) {
+                    setToken(null);
+                    setStudent(null);
+                }
+            })
+            .finally(() => {
+                if (isMounted) setLoading(false);
+            });
+
+        return () => {
+            isMounted = false;
+        };
     }, [token]);
 
     const login = async (email: string, password: string) => {

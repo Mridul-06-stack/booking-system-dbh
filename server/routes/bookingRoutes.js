@@ -8,6 +8,7 @@ const {
     getAllBookings,
     subscribeWaitlist,
     unsubscribeWaitlist,
+    checkInBooking,
 } = require('../controllers/bookingController');
 const { protect, adminOnly } = require('../middleware/auth');
 
@@ -16,6 +17,7 @@ router.post('/', protect, createBooking);
 router.put('/:id/cancel', protect, cancelBooking);
 router.get('/', protect, getMyBookings);
 router.get('/all', protect, adminOnly, getAllBookings);
+router.post('/:id/checkin', protect, adminOnly, checkInBooking);
 
 // Waitlist routes
 router.post('/waitlist', protect, subscribeWaitlist);

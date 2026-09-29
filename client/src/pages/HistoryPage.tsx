@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
 
@@ -6,15 +6,21 @@ export default function HistoryPage() {
     const [history, setHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchHistory();
+    const fetchHistory = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await api.get('/dashboard/history');
+            setHistory(res.data.bookings || []);
+        } catch {
+            setHistory([]);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    const fetchHistory = () => {
-        api.get('/dashboard/history')
-            .then(res => setHistory(res.data.bookings))
-            .finally(() => setLoading(false));
-    };
+    useEffect(() => {
+        fetchHistory();
+    }, [fetchHistory]);
 
     const handleCancel = async (id: string) => {
         if (!confirm('Are you sure you want to cancel this booking?')) return;
